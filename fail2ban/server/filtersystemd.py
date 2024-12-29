@@ -24,11 +24,8 @@ __license__ = "GPL"
 
 import os
 import time
-from distutils.version import LooseVersion
 
 from systemd import journal
-if LooseVersion(getattr(journal, '__version__', "0")) < '204':
-	raise ImportError("Fail2Ban requires systemd >= 204")
 
 from .failmanager import FailManagerEmpty
 from .filter import JournalFilter, Filter
@@ -429,6 +426,8 @@ class FilterSystemd(JournalFilter): # pragma: systemd no cover
 
 	def status(self, flavor="basic"):
 		ret = super(FilterSystemd, self).status(flavor=flavor)
+		if flavor == "stats":
+			return ret
 		ret.append(("Journal matches",
 			[" + ".join(" ".join(match) for match in self.__matches)]))
 		return ret

@@ -620,6 +620,19 @@ class Transmitter(TransmitterBase):
 				["set", self.jailName, "addignoreregex", 50])[0],
 			1)
 
+	_JAIL_STATUS = [
+		('Filter', [
+			('Currently failed', 0),
+			('Total failed', 0),
+			('File list', [])]
+		),
+		('Actions', [
+			('Currently banned', 0),
+			('Total banned', 0),
+			('Banned IP list', [])]
+		)
+	]
+
 	def testStatus(self):
 		jails = [self.jailName]
 		self.assertEqual(self.transm.proceed(["status"]),
@@ -628,59 +641,29 @@ class Transmitter(TransmitterBase):
 		jails.append("TestJail2")
 		self.assertEqual(self.transm.proceed(["status"]),
 			(0, [('Number of jail', len(jails)), ('Jail list', ", ".join(jails))]))
+		self.assertEqual(self.transm.proceed(["status", "--all"]),
+			(0, [('Number of jail', len(jails)), ('Jail list', ", ".join(jails)),
+				{"TestJail1": self._JAIL_STATUS, "TestJail2": self._JAIL_STATUS}
+			]))
+		self.assertEqual(self.transm.proceed(["stats"]),
+			(0, {
+				"TestJail1": [FAST_BACKEND, (0, 0), (0, 0)],
+				"TestJail2": [FAST_BACKEND, (0, 0), (0, 0)]
+			}))
 
 	def testJailStatus(self):
 		self.assertEqual(self.transm.proceed(["status", self.jailName]),
-			(0,
-				[
-					('Filter', [
-						('Currently failed', 0),
-						('Total failed', 0),
-						('File list', [])]
-					),
-					('Actions', [
-						('Currently banned', 0),
-						('Total banned', 0),
-						('Banned IP list', [])]
-					)
-				]
-			)
+			(0, self._JAIL_STATUS)
 		)
 
 	def testJailStatusBasic(self):
 		self.assertEqual(self.transm.proceed(["status", self.jailName, "basic"]),
-			(0,
-				[
-					('Filter', [
-						('Currently failed', 0),
-						('Total failed', 0),
-						('File list', [])]
-					),
-					('Actions', [
-						('Currently banned', 0),
-						('Total banned', 0),
-						('Banned IP list', [])]
-					)
-				]
-			)
+			(0, self._JAIL_STATUS)
 		)
 
 	def testJailStatusBasicKwarg(self):
 		self.assertEqual(self.transm.proceed(["status", self.jailName, "INVALID"]),
-			(0,
-				[
-					('Filter', [
-						('Currently failed', 0),
-						('Total failed', 0),
-						('File list', [])]
-					),
-					('Actions', [
-						('Currently banned', 0),
-						('Total banned', 0),
-						('Banned IP list', [])]
-					)
-				]
-			)
+			(0, self._JAIL_STATUS)
 		)
 
 	def testJailStatusCymru(self):
@@ -1613,10 +1596,10 @@ class ServerConfigReaderTests(LogCaptureTestCase):
 				'stop': (
 					"`iptables -w -D INPUT -p $proto -m multiport --dports http -m set --match-set f2b-j-w-iptables-ipset src -j REJECT --reject-with icmp-port-unreachable`",
 					"`ipset flush f2b-j-w-iptables-ipset`",
-					"`ipset destroy f2b-j-w-iptables-ipset`",
+					"`ipset destroy f2b-j-w-iptables-ipset 2>/dev/null || { sleep 1; ipset destroy f2b-j-w-iptables-ipset; }`",
 					"`ip6tables -w -D INPUT -p $proto -m multiport --dports http -m set --match-set f2b-j-w-iptables-ipset6 src -j REJECT --reject-with icmp6-port-unreachable`",
 					"`ipset flush f2b-j-w-iptables-ipset6`",
-					"`ipset destroy f2b-j-w-iptables-ipset6`",
+					"`ipset destroy f2b-j-w-iptables-ipset6 2>/dev/null || { sleep 1; ipset destroy f2b-j-w-iptables-ipset6; }`",
 				),
 				'ip4-check': (
 					r"""`iptables -w -C INPUT -p $proto -m multiport --dports http -m set --match-set f2b-j-w-iptables-ipset src -j REJECT --reject-with icmp-port-unreachable`""",
@@ -1662,10 +1645,10 @@ class ServerConfigReaderTests(LogCaptureTestCase):
 				'stop': (
 					"`iptables -w -D INPUT -p $proto -m set --match-set f2b-j-w-iptables-ipset-ap src -j REJECT --reject-with icmp-port-unreachable`",
 					"`ipset flush f2b-j-w-iptables-ipset-ap`",
-					"`ipset destroy f2b-j-w-iptables-ipset-ap`",
+					"`ipset destroy f2b-j-w-iptables-ipset-ap 2>/dev/null || { sleep 1; ipset destroy f2b-j-w-iptables-ipset-ap; }`",
 					"`ip6tables -w -D INPUT -p $proto -m set --match-set f2b-j-w-iptables-ipset-ap6 src -j REJECT --reject-with icmp6-port-unreachable`",
 					"`ipset flush f2b-j-w-iptables-ipset-ap6`",
-					"`ipset destroy f2b-j-w-iptables-ipset-ap6`",
+					"`ipset destroy f2b-j-w-iptables-ipset-ap6 2>/dev/null || { sleep 1; ipset destroy f2b-j-w-iptables-ipset-ap6; }`",
 				),
 				'ip4-check': (
 					r"""`iptables -w -C INPUT -p $proto -m set --match-set f2b-j-w-iptables-ipset-ap src -j REJECT --reject-with icmp-port-unreachable`""",
@@ -1993,10 +1976,10 @@ class ServerConfigReaderTests(LogCaptureTestCase):
 				'stop': (
 					"`firewall-cmd --direct --remove-rule ipv4 filter INPUT_direct 0 -p tcp -m multiport --dports http -m set --match-set f2b-j-w-fwcmd-ipset src -j REJECT --reject-with icmp-port-unreachable`",
 					"`ipset flush f2b-j-w-fwcmd-ipset`",
-					"`ipset destroy f2b-j-w-fwcmd-ipset`",
+					"`ipset destroy f2b-j-w-fwcmd-ipset 2>/dev/null || { sleep 1; ipset destroy f2b-j-w-fwcmd-ipset; }`",
 					"`firewall-cmd --direct --remove-rule ipv6 filter INPUT_direct 0 -p tcp -m multiport --dports http -m set --match-set f2b-j-w-fwcmd-ipset6 src -j REJECT --reject-with icmp6-port-unreachable`",
 					"`ipset flush f2b-j-w-fwcmd-ipset6`",
-					"`ipset destroy f2b-j-w-fwcmd-ipset6`",
+					"`ipset destroy f2b-j-w-fwcmd-ipset6 2>/dev/null || { sleep 1; ipset destroy f2b-j-w-fwcmd-ipset6; }`",
 				),
 				'ip4-ban': (
 					r"`ipset -exist add f2b-j-w-fwcmd-ipset 192.0.2.1 timeout 0`",
@@ -2029,10 +2012,10 @@ class ServerConfigReaderTests(LogCaptureTestCase):
 				'stop': (
 					"`firewall-cmd --direct --remove-rule ipv4 filter INPUT_direct 0 -p tcp -m set --match-set f2b-j-w-fwcmd-ipset-ap src -j REJECT --reject-with icmp-port-unreachable`",
 					"`ipset flush f2b-j-w-fwcmd-ipset-ap`",
-					"`ipset destroy f2b-j-w-fwcmd-ipset-ap`",
+					"`ipset destroy f2b-j-w-fwcmd-ipset-ap 2>/dev/null || { sleep 1; ipset destroy f2b-j-w-fwcmd-ipset-ap; }`",
 					"`firewall-cmd --direct --remove-rule ipv6 filter INPUT_direct 0 -p tcp -m set --match-set f2b-j-w-fwcmd-ipset-ap6 src -j REJECT --reject-with icmp6-port-unreachable`",
 					"`ipset flush f2b-j-w-fwcmd-ipset-ap6`",
-					"`ipset destroy f2b-j-w-fwcmd-ipset-ap6`",
+					"`ipset destroy f2b-j-w-fwcmd-ipset-ap6 2>/dev/null || { sleep 1; ipset destroy f2b-j-w-fwcmd-ipset-ap6; }`",
 				),
 				'ip4-ban': (
 					r"`ipset -exist add f2b-j-w-fwcmd-ipset-ap 192.0.2.1 timeout 0`",
@@ -2051,32 +2034,32 @@ class ServerConfigReaderTests(LogCaptureTestCase):
 			('j-fwcmd-rr', 'firewallcmd-rich-rules[port="22:24", protocol="tcp"]', {
 				'ip4': ("family='ipv4'", "icmp-port-unreachable",), 'ip6': ("family='ipv6'", 'icmp6-port-unreachable',),
 				'ip4-ban': (
-					"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --add-rich-rule="rule family='ipv4' source address='192.0.2.1' port port='$p' protocol='tcp' reject type='icmp-port-unreachable'"; done`""",
+					r"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --add-rich-rule="rule family=\"ipv4\" source address=\"192.0.2.1\" port port=\"$p\" protocol=\"tcp\" reject type='icmp-port-unreachable'"; done`""",
 				),
 				'ip4-unban': (
-					"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --remove-rich-rule="rule family='ipv4' source address='192.0.2.1' port port='$p' protocol='tcp' reject type='icmp-port-unreachable'"; done`""",
+					r"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --remove-rich-rule="rule family=\"ipv4\" source address=\"192.0.2.1\" port port=\"$p\" protocol=\"tcp\" reject type='icmp-port-unreachable'"; done`""",
 				),
 				'ip6-ban': (
-					""" `ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --add-rich-rule="rule family='ipv6' source address='2001:db8::' port port='$p' protocol='tcp' reject type='icmp6-port-unreachable'"; done`""",
+					r""" `ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --add-rich-rule="rule family=\"ipv6\" source address=\"2001:db8::\" port port=\"$p\" protocol=\"tcp\" reject type='icmp6-port-unreachable'"; done`""",
 				),
 				'ip6-unban': (
-					"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --remove-rich-rule="rule family='ipv6' source address='2001:db8::' port port='$p' protocol='tcp' reject type='icmp6-port-unreachable'"; done`""",
+					r"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --remove-rich-rule="rule family=\"ipv6\" source address=\"2001:db8::\" port port=\"$p\" protocol=\"tcp\" reject type='icmp6-port-unreachable'"; done`""",
 				),					
 			}),
 			# firewallcmd-rich-logging --
 			('j-fwcmd-rl', 'firewallcmd-rich-logging[port="22:24", protocol="tcp"]', {
 				'ip4': ("family='ipv4'", "icmp-port-unreachable",), 'ip6': ("family='ipv6'", 'icmp6-port-unreachable',),
 				'ip4-ban': (
-					"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --add-rich-rule="rule family='ipv4' source address='192.0.2.1' port port='$p' protocol='tcp' log prefix='f2b-j-fwcmd-rl' level='info' limit value='1/m' reject type='icmp-port-unreachable'"; done`""",
+					r"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --add-rich-rule="rule family=\"ipv4\" source address=\"192.0.2.1\" port port=\"$p\" protocol=\"tcp\" log prefix='f2b-j-fwcmd-rl' level='info' limit value='1/m' reject type='icmp-port-unreachable'"; done`""",
 				),
 				'ip4-unban': (
-					"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --remove-rich-rule="rule family='ipv4' source address='192.0.2.1' port port='$p' protocol='tcp' log prefix='f2b-j-fwcmd-rl' level='info' limit value='1/m' reject type='icmp-port-unreachable'"; done`""",
+					r"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --remove-rich-rule="rule family=\"ipv4\" source address=\"192.0.2.1\" port port=\"$p\" protocol=\"tcp\" log prefix='f2b-j-fwcmd-rl' level='info' limit value='1/m' reject type='icmp-port-unreachable'"; done`""",
 				),
 				'ip6-ban': (
-					""" `ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --add-rich-rule="rule family='ipv6' source address='2001:db8::' port port='$p' protocol='tcp' log prefix='f2b-j-fwcmd-rl' level='info' limit value='1/m' reject type='icmp6-port-unreachable'"; done`""",
+					r""" `ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --add-rich-rule="rule family=\"ipv6\" source address=\"2001:db8::\" port port=\"$p\" protocol=\"tcp\" log prefix='f2b-j-fwcmd-rl' level='info' limit value='1/m' reject type='icmp6-port-unreachable'"; done`""",
 				),
 				'ip6-unban': (
-					"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --remove-rich-rule="rule family='ipv6' source address='2001:db8::' port port='$p' protocol='tcp' log prefix='f2b-j-fwcmd-rl' level='info' limit value='1/m' reject type='icmp6-port-unreachable'"; done`""",
+					r"""`ports="22:24"; for p in $(echo $ports | tr ", " " "); do firewall-cmd --remove-rich-rule="rule family=\"ipv6\" source address=\"2001:db8::\" port port=\"$p\" protocol=\"tcp\" log prefix='f2b-j-fwcmd-rl' level='info' limit value='1/m' reject type='icmp6-port-unreachable'"; done`""",
 				),					
 			}),
 		)

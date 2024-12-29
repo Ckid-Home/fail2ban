@@ -148,7 +148,7 @@ class Fail2banRegexTest(LogCaptureTestCase):
 		self.assertLogged("Unable to compile regular expression")
 		self.assertLogged("unknown group name", "at position 23", all=False); # details of failed compilation
 
-	def testWrongIngnoreRE(self):
+	def testWrongIgnoreRE(self):
 		self.assertFalse(_test_exec(
 			"--datepattern", "{^LN-BEG}EPOCH",
 			"test", r".*? from <HOST>$", r".**"
@@ -316,6 +316,20 @@ class Fail2banRegexTest(LogCaptureTestCase):
 		"-l", "notice", # put down log-level, because of too many debug-messages
 			FILENAME_ZZZ_GEN, FILTER_ZZZ_GEN+"[mode=test]"
 		))
+		self.assertLogged("Ignoreregex: 2 total",
+			"Lines: 23 lines, 2 ignored, 16 matched, 5 missed", all=True)
+		# cover filter ignoreregex gets overwritten by command argument:
+		self.pruneLog("[test-phase 2]")
+		self.assertTrue(_test_exec(
+		"-l", "notice", # put down log-level, because of too many debug-messages
+			"[Jun 21 16:56:03] machine test-demo(pam_unix)[13709] F2B: error from 192.0.2.251\n"
+			"[Jun 21 16:56:04] machine test-demo(pam_unix)[13709] F2B: error from 192.0.2.252\n"
+			"[Jun 21 16:56:05] machine test-demo(pam_unix)[13709] F2B: error from 192.0.2.255\n",
+			FILTER_ZZZ_GEN+"[mode=test]",
+			"F2B: error from 192.0.2.255$"
+		))
+		self.assertLogged("Use ignoreregex line", "Ignoreregex: 1 total",
+			"Lines: 3 lines, 1 ignored, 2 matched, 0 missed", all=True)
 
 	def testDirectMultilineBuf(self):
 		# test it with some pre-lines also to cover correct buffer scrolling (all multi-lines printed):
@@ -567,7 +581,7 @@ class Fail2banRegexTest(LogCaptureTestCase):
 			FILENAME_ZZZ_GEN, FILENAME_ZZZ_GEN
 		))
 
-	def testWronChar(self):
+	def testWrongChar(self):
 		unittest.F2B.SkipIfCfgMissing(stock=True)
 		self.assertTrue(_test_exec(
 		"-l", "notice", # put down log-level, because of too many debug-messages
@@ -582,7 +596,7 @@ class Fail2banRegexTest(LogCaptureTestCase):
 		self.assertLogged('Nov  8 00:16:12 main sshd[32548]: input_userauth_request: invalid user llinco')
 		self.assertLogged('Nov  8 00:16:12 main sshd[32547]: pam_succeed_if(sshd:auth): error retrieving information about user llinco')
 
-	def testWronCharDebuggex(self):
+	def testWrongCharDebuggex(self):
 		unittest.F2B.SkipIfCfgMissing(stock=True)
 		self.assertTrue(_test_exec(
 		"-l", "notice", # put down log-level, because of too many debug-messages

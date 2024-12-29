@@ -482,6 +482,9 @@ class Filter(JailThread):
 		# Perform the ban if this attempt is resulted to:
 		if attempts >= self.failManager.getMaxRetry():
 			self.performBan(ip)
+		# report to observer - failure was found, for possibly increasing of it retry counter (asynchronous)
+		if Observers.Main is not None:
+			Observers.Main.add('failureFound', self.jail, ticket)
 
 		return 1
 
@@ -978,6 +981,8 @@ class Filter(JailThread):
 	def status(self, flavor="basic"):
 		"""Status of failures detected by filter.
 		"""
+		if flavor == "stats":
+			return (self.failManager.size(), self.failManager.getFailTotal())
 		ret = [("Currently failed", self.failManager.size()),
 		       ("Total failed", self.failManager.getFailTotal())]
 		return ret
@@ -1255,6 +1260,8 @@ class FileFilter(Filter):
 		"""Status of Filter plus files being monitored.
 		"""
 		ret = super(FileFilter, self).status(flavor=flavor)
+		if flavor == "stats":
+			return ret
 		path = list(self.__logs.keys())
 		ret.append(("File list", path))
 		return ret

@@ -144,6 +144,8 @@ class Transmitter:
 			return self.__commandGet(command[1:])
 		elif name == "status":
 			return self.status(command[1:])
+		elif name in ("stats", "statistic", "statistics"):
+			return self.__server.status("--all", "stats")
 		elif name == "version":
 			return version.version
 		elif name == "config-error":
@@ -512,11 +514,10 @@ class Transmitter:
 	def status(self, command):
 		if len(command) == 0:
 			return self.__server.status()
-		elif len(command) == 1:
+		elif len(command) >= 1 and len(command) <= 2:
 			name = command[0]
-			return self.__server.statusJail(name)
-		elif len(command) == 2:
-			name = command[0]
-			flavor = command[1]
+			flavor = command[1] if len(command) == 2 else "basic"
+			if name == "--all":
+				return self.__server.status("--all", flavor)
 			return self.__server.statusJail(name, flavor=flavor)
 		raise Exception("Invalid command (no status)")

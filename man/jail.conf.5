@@ -197,6 +197,9 @@ Optional space separated option 'tail' can be added to the end of the path to ca
 
 Ensure syslog or the program that generates the log file isn't configured to compress repeated log messages to "\fI*last message repeated 5 time*s\fR" otherwise it will fail to detect. This is called \fIRepeatedMsgReduction\fR in rsyslog and should be \fIOff\fR.
 .TP
+.B skip_if_nologs
+if no logpath matches found, skip the jail by start of fail2ban if \fIskip_if_nologs\fR set to true, otherwise (default: false) start of fail2ban will fail with an error "Have not found any log file".
+.TP
 .B logencoding
 encoding of log files used for decoding. Default value of "auto" uses current system locale.
 .TP
@@ -544,7 +547,7 @@ There are several prefixes and words with special meaning that could be specifie
 specifies the systemd journal match used to filter the journal entries. See \fBjournalctl(1)\fR and \fBsystemd.journal-fields(7)\fR for matches syntax and more details on special journal fields. This option is only valid for the \fIsystemd\fR backend.
 .PP
 Similar to actions, filters may have an [Init] section also (optional since v.0.10). All parameters of both sections [Definition] and [Init] can be overridden (redefined or extended) in \fIjail.conf\fR or \fIjail.local\fR (or in related \fIfilter.d/filter-name.local\fR).
-Every option supplied in the jail to the filter overwrites the value specified in [Init] section, which in turm would overwrite the value in [Definition] section.
+Every option supplied in the jail to the filter overwrites the value specified in [Init] section, which in turn would overwrite the value in [Definition] section.
 Besides the standard settings of filter both sections can be used to initialize filter-specific options.
 
 Filters can also have a section called [INCLUDES]. This is used to read other configuration files.
